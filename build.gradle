@@ -1,0 +1,86 @@
+buildscript {
+  repositories {
+    mavenLocal()
+    jcenter()
+  }
+}
+
+allprojects {
+  buildscript {
+    repositories {
+      mavenLocal()
+      jcenter()
+    }
+  }
+
+  repositories {
+    mavenLocal()
+    jcenter()
+  }
+}
+
+apply plugin: 'groovy'
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: "maven-publish"
+
+dependencies {
+    compile gradleApi()
+    compile localGroovy()
+
+    compile 'com.android.tools.build:gradle:1.5.0'
+    compile 'com.android.tools.build:transform-api:1.5.0'
+
+    compile 'commons-io:commons-io:2.4'
+    compile 'javassist:javassist:3.12.1.GA'
+}
+
+compileJava {
+    sourceCompatibility = '1.7'
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives jar
+    archives sourcesJar
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId POM_GROUP_ID
+            artifactId POM_ARTIFACT_ID
+            version POM_VERSION
+
+            artifact sourcesJar
+            artifact javadocJar
+
+            pom.withXml {
+                asNode().dependencies.'*'.findAll {
+                    it.scope.text() == 'runtime' && project.configurations.compile.allDependencies.find { dep ->
+                        dep.name == it.artifactId.text()
+                    }
+                } each {
+                    it.scope*.value = 'compile'
+                }
+
+                asNode().dependencies.'*'.findAll {
+                    it.groupId.text() == "com.android.tools.build"
+                } each {
+                    it.scope*.value = 'provided'
+                }
+            }
+
+            from components.java
+        }
+    }
+}
