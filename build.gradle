@@ -24,8 +24,8 @@ allprojects {
 
 apply plugin: 'groovy'
 apply plugin: 'java'
-apply plugin: 'idea'
-apply plugin: "maven-publish"
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
 
 dependencies {
     compile gradleApi()
@@ -52,13 +52,15 @@ task javadocJar(type: Jar) {
     from javadoc.destinationDir
 }
 
+task signJars (type : Sign, dependsOn: [jar, javadocJar, sourcesJar]) {
+    sign configurations.archives
+}
+
 artifacts {
     archives jar
     archives javadocJar
     archives sourcesJar
 }
-
-apply plugin: 'signing'
 
 signing {
     required {
@@ -73,7 +75,6 @@ publishing {
             groupId POM_GROUP_ID
             artifactId POM_ARTIFACT_ID
             version POM_VERSION
-
             artifact sourcesJar
             artifact javadocJar
 
@@ -98,7 +99,7 @@ publishing {
     }
     repositories {
         maven {
-            url SNAPSHOT_REPOSITORY_URL
+            url 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
             credentials {
                 username OSSRH_USERNAME
                 password OSSRH_PASSWORD
