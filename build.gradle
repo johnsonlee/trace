@@ -1,22 +1,25 @@
 buildscript {
-  repositories {
-    mavenLocal()
-    jcenter()
-  }
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        jcenter()
+    }
 }
 
 allprojects {
-  buildscript {
-    repositories {
-      mavenLocal()
-      jcenter()
+    buildscript {
+        repositories {
+            mavenLocal()
+            mavenCentral()
+            jcenter()
+        }
     }
-  }
 
-  repositories {
-    mavenLocal()
-    jcenter()
-  }
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        jcenter()
+    }
 }
 
 apply plugin: 'groovy'
@@ -51,7 +54,17 @@ task javadocJar(type: Jar) {
 
 artifacts {
     archives jar
+    archives javadocJar
     archives sourcesJar
+}
+
+apply plugin: 'signing'
+
+signing {
+    required {
+        (!project.POM_VERSION.endsWith('-SNAPSHOT')) && gradle.taskGraph.hasTask('publish')
+    }
+    sign configurations.archives
 }
 
 publishing {
@@ -81,6 +94,15 @@ publishing {
             }
 
             from components.java
+        }
+    }
+    repositories {
+        maven {
+            url SNAPSHOT_REPOSITORY_URL
+            credentials {
+                username OSSRH_USERNAME
+                password OSSRH_PASSWORD
+            }
         }
     }
 }
