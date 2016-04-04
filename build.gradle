@@ -24,7 +24,7 @@ allprojects {
 
 apply plugin: 'groovy'
 apply plugin: 'java'
-apply plugin: 'maven-publish'
+apply plugin: 'maven'
 apply plugin: 'signing'
 
 dependencies {
@@ -38,8 +38,14 @@ dependencies {
     compile 'javassist:javassist:3.12.1.GA'
 }
 
-compileJava {
-    sourceCompatibility = '1.7'
+signing {
+    required { gradle.taskGraph.hasTask('uploadArchives') && !project.POM_VERSION.endsWith('-SNAPSHOT') }
+    sign configurations.archives
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
 }
 
 task sourcesJar(type: Jar) {
@@ -47,62 +53,63 @@ task sourcesJar(type: Jar) {
     from sourceSets.main.allSource
 }
 
-task javadocJar(type: Jar) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
-}
-
-task signJars (type : Sign, dependsOn: [jar, javadocJar, sourcesJar]) {
-    sign configurations.archives
-}
-
 artifacts {
-    archives jar
-    archives javadocJar
     archives sourcesJar
+    archives javadocJar
 }
 
-signing {
-    required {
-        (!project.POM_VERSION.endsWith('-SNAPSHOT')) && gradle.taskGraph.hasTask('publish')
-    }
-    sign configurations.archives
-}
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            groupId POM_GROUP_ID
-            artifactId POM_ARTIFACT_ID
-            version POM_VERSION
-            artifact sourcesJar
-            artifact javadocJar
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
             pom.withXml {
-                asNode().dependencies.'*'.findAll {
-                    it.scope.text() == 'runtime' && project.configurations.compile.allDependencies.find { dep ->
-                        dep.name == it.artifactId.text()
-                    }
-                } each {
-                    it.scope*.value = 'compile'
-                }
-
-                asNode().dependencies.'*'.findAll {
-                    it.groupId.text() == "com.android.tools.build"
-                } each {
+                asNode().dependencies.'*'.findAll { it.groupId.text() == "com.android.tools.build" } each {
                     it.scope*.value = 'provided'
                 }
             }
 
-            from components.java
-        }
-    }
-    repositories {
-        maven {
-            url 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
-            credentials {
-                username OSSRH_USERNAME
-                password OSSRH_PASSWORD
+            pom.project {
+                groupId POM_GROUP_ID
+                artifactId POM_ARTIFACT_ID
+                version POM_VERSION
+                packaging POM_PACKAGING
+
+                name POM_PROJECT_NAME
+                description POM_PROJECT_DESCRIPTION
+                url POM_PROJECT_URL
+                inceptionYear POM_PROJECT_INCEPTION_YEAR
+
+                organization {
+                    name POM_ORG_NAME
+                    url POM_ORG_URL
+                }
+                licenses {
+                    license {
+                        name POM_LICENSE_NAME
+                        url POM_LICENSE_URL
+                        distribution POM_LICENSE_DIST
+                    }
+                }
+                scm {
+                    url POM_SCM_URL
+                    connection POM_SCM_CONNECTION
+                    developerConnection POM_SCM_DEV_CONNECTION
+                    tag POM_SCM_TAG
+                }
+                developers {
+                    developer {
+                        id POM_DEVELOPER_ID
+                        name POM_DEVELOPER_NAME
+                        email POM_DEVELOPER_EMAIL
+                    }
+                }
+            }
+            repository(url: OSSRH_RELEASE_REPOSITORY_URL) {
+                authentication(userName: OSSRH_USERNAME, password: OSSRH_PASSWORD)
+            }
+            snapshotRepository(url: OSSRH_SNAPSHOT_REPOSITORY_URL) {
+                authentication(userName: OSSRH_USERNAME, password: OSSRH_PASSWORD)
             }
         }
     }
