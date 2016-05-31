@@ -30,11 +30,13 @@ class TraceCompiler {
         final ClassPool pool = ClassPool.default;
 
         for (final File ref : options.references) {
-            println(" * $ref")
+            println(" * $ref");
             pool.appendClassPath(ref.absolutePath);
         }
 
         for (final File input : options.inputs) {
+            println(" + $input.absolutePath");
+
             if (input.directory) {
                 this.compileDir(pool, input, options.output);
             } else {
@@ -118,19 +120,16 @@ class TraceCompiler {
     private void compileClass(final ClassPool pool, final InputStream is, final File output, final boolean ignore) throws Exception {
         final CtClass klass = pool.makeClass(is, false);
 
-        println(" + ${klass.name}");
+        println("   - ${klass.name}");
 
         if (!ignore) {
             if (!(klass.isAnnotation() || klass.isArray() || klass.isEnum() || klass.isInterface() || klass.isPrimitive() || klass.isFrozen())) {
-                klass.declaredMethods.findAll { !Modifier.isAbstract(it.modifiers) }.each { m ->
-                    if (Modifier.isNative(m.modifiers) || Modifier.isAbstract(m.modifiers))
-                        return;
-
+                klass.declaredMethods.findAll { !Modifier.isAbstract(it.modifiers) && !java.lang.reflect.Modifier.isNative(it.modifiers) }.each { m ->
                     try {
                         m.addLocalVariable("${m.name}ElapsedTime", CtClass.longType);
                         m.insertBefore("{${m.name}ElapsedTime = System.nanoTime();}");
                         m.insertAfter("{android.util.Log.v(\"trace\", \"${klass.name}#${m.name}${m.signature} (\" + ((System.nanoTime() - ${m.name}ElapsedTime) / 1000000f) + \" ms)\");}");
-                        println("   - ${klass.name}#${m.name}${m.signature}");
+                        println("     - ${klass.name}#${m.name}${m.signature}");
                     } catch (final Exception e) {
                     }
                 }
