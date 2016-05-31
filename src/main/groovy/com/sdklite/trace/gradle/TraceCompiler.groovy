@@ -30,6 +30,7 @@ class TraceCompiler {
         final ClassPool pool = ClassPool.default;
 
         for (final File ref : options.references) {
+            println(" * $ref")
             pool.appendClassPath(ref.absolutePath);
         }
 
@@ -122,10 +123,16 @@ class TraceCompiler {
         if (!ignore) {
             if (!(klass.isAnnotation() || klass.isArray() || klass.isEnum() || klass.isInterface() || klass.isPrimitive() || klass.isFrozen())) {
                 klass.declaredMethods.findAll { !Modifier.isAbstract(it.modifiers) }.each { m ->
-                    println("   - ${klass.name}#${m.name}${m.signature}");
-                    m.addLocalVariable("${m.name}ElapsedTime", CtClass.longType);
-                    m.insertBefore("{${m.name}ElapsedTime = System.nanoTime();}");
-                    m.insertAfter("{android.util.Log.v(\"trace\", \"${klass.name}#${m.name}${m.signature} (\" + ((System.nanoTime() - ${m.name}ElapsedTime) / 1000000f) + \" ms)\");}");
+                    if (Modifier.isNative(m.modifiers) || Modifier.isAbstract(m.modifiers))
+                        return;
+
+                    try {
+                        m.addLocalVariable("${m.name}ElapsedTime", CtClass.longType);
+                        m.insertBefore("{${m.name}ElapsedTime = System.nanoTime();}");
+                        m.insertAfter("{android.util.Log.v(\"trace\", \"${klass.name}#${m.name}${m.signature} (\" + ((System.nanoTime() - ${m.name}ElapsedTime) / 1000000f) + \" ms)\");}");
+                        println("   - ${klass.name}#${m.name}${m.signature}");
+                    } catch (final Exception e) {
+                    }
                 }
             }
         }
@@ -165,6 +172,7 @@ class TraceCompiler {
      */
     private void compileFile(final InputStream input, final File output) throws IOException {
         if (!output.exists()) {
+            output.getParentFile().mkdirs();
             output.createNewFile();
         } else {
             this.project.logger.warn("`$output` alread exists");
