@@ -35,7 +35,7 @@ dependencies {
     compile 'com.android.tools.build:transform-api:1.5.0'
 
     compile 'commons-io:commons-io:2.4'
-    compile 'javassist:javassist:3.12.1.GA'
+    compile 'org.javassist:javassist:3.20.0-GA'
 }
 
 signing {
