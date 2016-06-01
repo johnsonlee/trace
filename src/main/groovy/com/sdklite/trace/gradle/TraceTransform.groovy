@@ -3,8 +3,7 @@ package com.sdklite.trace.gradle;
 import com.android.build.gradle.AppExtension;
 import com.android.build.gradle.LibraryExtension;
 import com.android.build.gradle.LibraryPlugin;
-import com.android.build.api.transform.*;
-import org.gradle.api.GradleException;
+import com.android.build.api.transform.*
 import org.gradle.api.Project;
 
 /**
@@ -76,6 +75,10 @@ public class TraceTransform extends Transform {
 
     @Override
     void transform(final Context context, final Collection<TransformInput> inputs, final Collection<TransformInput> references, final TransformOutputProvider outputProvider, final boolean isIncremental) throws IOException, TransformException, InterruptedException {
+        if (!project.extensions.getByType(TraceExtension).enabled) {
+            return;
+        }
+
         // clean output
         outputProvider.deleteAll();
 

@@ -11,8 +11,12 @@ import org.gradle.api.Project;
  */
 public class TracePlugin implements Plugin<Project> {
 
+    static final String TRACE_EXTENSION = 'trace';
+
     @Override
     public void apply(final Project project) {
+        project.extensions.create(TRACE_EXTENSION, TraceExtension, project);
+
         def isLibrary = project.plugins.hasPlugin(LibraryPlugin);
         def android = project.extensions.getByType(isLibrary ? LibraryExtension : AppExtension);
         android.registerTransform(new TraceTransform(project));
