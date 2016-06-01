@@ -13,8 +13,8 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:1.5.0'
-        classpath 'com.sdklite.trace:gradle-plugin:0.0.1' // HERE
+        classpath 'com.android.tools.build:gradle:1.5.0' // Or higher version
+        classpath 'com.sdklite.trace:gradle-plugin:0.0.2' // HERE
     }
 }
 ```
@@ -30,3 +30,26 @@ Finally, build your project and install the application to your android device, 
 ```bash
 adb logcat -s trace
 ```
+
+## Launch speed optimization
+
+Trace gradle plugin is useful and convinient for app launch speed optimization
+by dumping the trace log via logcat:
+
+1. Clean logcat
+
+    ```bash
+    adb logcat -c
+    ```
+2. Launch app
+3. Dump trace log
+
+    ```bash
+    adb logcat -d -s trace | awk -F: '{print $NF}' | awk '{printf "%s, %s\n", $1, substr($2, 2)}'
+    ```
+
+    or filter by elapsed time
+
+    ```bash
+    adb logcat -d -s trace | awk -F: '{print $NF}' | awk '{et=strtonum(substr($2,2)); if (et > 30) { printf "%s, %s\n", $1, et}}'
+    ```
