@@ -31,10 +31,10 @@ Finally, build your project and install the application to your android device, 
 adb logcat -s trace
 ```
 
-## Launch speed optimization
+## Performance optimization
 
-Trace gradle plugin is useful and convinient for app launch speed optimization
-by dumping the trace log via logcat:
+Trace gradle plugin is useful and convinient for performance optimization by
+dumping the trace log via logcat:
 
 1. Clean logcat
 
